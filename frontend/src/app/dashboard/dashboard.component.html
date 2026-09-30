@@ -1,0 +1,70 @@
+<div class="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-7xl mx-auto">
+    <div class="mb-8 flex justify-between items-end">
+      <div>
+        <h1 class="text-3xl font-bold text-gray-900">Dashboard</h1>
+        <p class="mt-2 text-sm text-gray-500">Real-time status of active shipments.</p>
+      </div>
+      <div class="flex items-center space-x-2">
+        <span class="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">System Online</span>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+      <!-- Temperature Card -->
+      <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6 border border-gray-100">
+        <dt class="truncate text-sm font-medium text-gray-500">Temperature</dt>
+        <dd class="mt-1 flex items-baseline justify-between md:block lg:flex">
+          <div class="flex items-baseline text-2xl font-semibold text-gray-900">
+            {{ metrics.temperature.value }}
+            <span class="ml-1 text-sm font-medium text-gray-500">{{ metrics.temperature.unit }}</span>
+          </div>
+          <div class="inline-flex items-baseline rounded-full px-2.5 py-0.5 text-sm font-medium bg-green-100 text-green-800 md:mt-2 lg:mt-0">
+            {{ metrics.temperature.status }}
+          </div>
+        </dd>
+      </div>
+
+      <!-- Humidity Card -->
+      <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6 border border-gray-100">
+        <dt class="truncate text-sm font-medium text-gray-500">Humidity</dt>
+        <dd class="mt-1 flex items-baseline justify-between md:block lg:flex">
+          <div class="flex items-baseline text-2xl font-semibold text-gray-900">
+            {{ metrics.humidity.value }}
+            <span class="ml-1 text-sm font-medium text-gray-500">{{ metrics.humidity.unit }}</span>
+          </div>
+          <div class="inline-flex items-baseline rounded-full px-2.5 py-0.5 text-sm font-medium bg-green-100 text-green-800 md:mt-2 lg:mt-0">
+            {{ metrics.humidity.status }}
+          </div>
+        </dd>
+      </div>
+
+      <!-- Ethylene Card -->
+      <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6 border border-gray-100">
+        <dt class="truncate text-sm font-medium text-gray-500">Ethylene</dt>
+        <dd class="mt-1 flex items-baseline justify-between md:block lg:flex">
+          <div class="flex items-baseline text-2xl font-semibold text-gray-900">
+            {{ metrics.ethylene.value }}
+            <span class="ml-1 text-sm font-medium text-gray-500">{{ metrics.ethylene.unit }}</span>
+          </div>
+          <div class="inline-flex items-baseline rounded-full px-2.5 py-0.5 text-sm font-medium bg-green-100 text-green-800 md:mt-2 lg:mt-0">
+            {{ metrics.ethylene.status }}
+          </div>
+        </dd>
+      </div>
+
+      <!-- Ledger Status Card -->
+      <div class="overflow-hidden rounded-lg bg-slate-900 px-4 py-5 shadow sm:p-6">
+        <dt class="truncate text-sm font-medium text-slate-300">Audit Ledger</dt>
+        <dd class="mt-1 flex items-baseline justify-between md:block lg:flex">
+          <div class="flex items-baseline text-xl font-bold text-white tracking-widest">
+            {{ metrics.ledger.value }}
+          </div>
+          <div class="inline-flex items-baseline rounded-full px-2.5 py-0.5 text-sm font-medium bg-emerald-500/10 text-emerald-400 md:mt-2 lg:mt-0 ring-1 ring-inset ring-emerald-500/20">
+            {{ metrics.ledger.status }}
+          </div>
+        </dd>
+      </div>
+    </div>
+  </div>
+</div>

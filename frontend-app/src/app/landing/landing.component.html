@@ -1,0 +1,68 @@
+<div class="bg-slate-950 text-white min-h-screen">
+  <!-- Navbar -->
+  <nav class="container mx-auto px-6 py-4 flex justify-between items-center" data-aos="fade-down">
+    <div class="text-2xl font-bold tracking-wider text-blue-400">TraceNode</div>
+    <div class="space-x-6">
+      <a routerLink="/login" class="text-slate-300 hover:text-white transition-colors">Admin Login</a>
+      <a routerLink="/app/dashboard" class="px-5 py-2 bg-blue-600 hover:bg-blue-500 rounded-md font-medium transition-colors">Go to Dashboard</a>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="container mx-auto px-6 py-24 text-center lg:py-40">
+    <h1 class="text-5xl md:text-7xl font-extrabold tracking-tight mb-6" data-aos="zoom-in">
+      Every shipment. <br/>
+      <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">Verified.</span>
+    </h1>
+    <p class="text-xl md:text-2xl text-slate-400 mb-10 max-w-3xl mx-auto" data-aos="fade-up" data-aos-delay="200">
+      Low-cost IoT traceability for environmental monitoring, offline-first data collection, and cryptographically verifiable shipment history.
+    </p>
+    <div class="flex flex-col sm:flex-row justify-center gap-4" data-aos="fade-up" data-aos-delay="400">
+      <a routerLink="/app/dashboard" class="px-8 py-4 bg-blue-600 hover:bg-blue-500 rounded-lg text-lg font-bold transition-transform transform hover:-translate-y-1 shadow-lg shadow-blue-600/30">
+        Start Monitoring
+      </a>
+      <button class="px-8 py-4 bg-slate-800 hover:bg-slate-700 rounded-lg text-lg font-bold transition-transform transform hover:-translate-y-1">
+        Learn More
+      </button>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section class="bg-slate-900 py-24">
+    <div class="container mx-auto px-6">
+      <div class="text-center mb-16" data-aos="fade-up">
+        <h2 class="text-3xl md:text-4xl font-bold mb-4">Enterprise Grade Integrity</h2>
+        <p class="text-slate-400">Powered by MQTT, Supabase, and SHA-256 Ledger.</p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
+        <!-- Feature 1 -->
+        <div class="bg-slate-800 p-8 rounded-2xl border border-slate-700 hover:border-blue-500/50 transition-colors" data-aos="fade-up" data-aos-delay="100">
+          <div class="w-14 h-14 bg-blue-500/20 rounded-lg flex items-center justify-center mb-6">
+            <svg class="w-7 h-7 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+          </div>
+          <h3 class="text-xl font-bold mb-3">Real-time IoT</h3>
+          <p class="text-slate-400">Direct integration with ESP32 & 4G GSM hardware via optimized MQTT payload handling.</p>
+        </div>
+
+        <!-- Feature 2 -->
+        <div class="bg-slate-800 p-8 rounded-2xl border border-slate-700 hover:border-emerald-500/50 transition-colors" data-aos="fade-up" data-aos-delay="300">
+          <div class="w-14 h-14 bg-emerald-500/20 rounded-lg flex items-center justify-center mb-6">
+            <svg class="w-7 h-7 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+          </div>
+          <h3 class="text-xl font-bold mb-3">Crypto Ledger</h3>
+          <p class="text-slate-400">Every event is hashed and chained, making tampering mathematically impossible.</p>
+        </div>
+
+        <!-- Feature 3 -->
+        <div class="bg-slate-800 p-8 rounded-2xl border border-slate-700 hover:border-purple-500/50 transition-colors" data-aos="fade-up" data-aos-delay="500">
+          <div class="w-14 h-14 bg-purple-500/20 rounded-lg flex items-center justify-center mb-6">
+            <svg class="w-7 h-7 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+          </div>
+          <h3 class="text-xl font-bold mb-3">Analytics</h3>
+          <p class="text-slate-400">Deep insight into temperature, humidity, ethylene, and GPS routing.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>

@@ -1,0 +1,178 @@
+<div class="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-7xl mx-auto">
+    <div class="mb-8 flex justify-between items-end">
+      <div>
+        <h1 class="text-3xl font-bold text-gray-900">Dashboard</h1>
+        <p class="mt-2 text-sm text-gray-500">Real-time status of active shipments.</p>
+        <p class="mt-1 text-xs text-gray-400">Last updated: {{ lastUpdated }}</p>
+      </div>
+      <div class="flex items-center space-x-2">
+        <span class="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">System Online</span>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-5">
+      <!-- Temperature Card -->
+      <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6 border border-gray-100">
+        <dt class="truncate text-sm font-medium text-gray-500">Temperature</dt>
+        <dd class="mt-1 flex items-baseline justify-between md:block lg:flex">
+          <div class="flex items-baseline text-2xl font-semibold text-gray-900">
+            {{ metrics.temperature.value }}
+            <span class="ml-1 text-sm font-medium text-gray-500">{{ metrics.temperature.unit }}</span>
+          </div>
+          <div class="inline-flex items-baseline rounded-full px-2.5 py-0.5 text-sm font-medium bg-green-100 text-green-800 md:mt-2 lg:mt-0">
+            {{ metrics.temperature.status }}
+          </div>
+        </dd>
+      </div>
+
+      <!-- Humidity Card -->
+      <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6 border border-gray-100">
+        <dt class="truncate text-sm font-medium text-gray-500">Humidity</dt>
+        <dd class="mt-1 flex items-baseline justify-between md:block lg:flex">
+          <div class="flex items-baseline text-2xl font-semibold text-gray-900">
+            {{ metrics.humidity.value }}
+            <span class="ml-1 text-sm font-medium text-gray-500">{{ metrics.humidity.unit }}</span>
+          </div>
+          <div class="inline-flex items-baseline rounded-full px-2.5 py-0.5 text-sm font-medium bg-green-100 text-green-800 md:mt-2 lg:mt-0">
+            {{ metrics.humidity.status }}
+          </div>
+        </dd>
+      </div>
+
+      <!-- Ethylene Card -->
+      <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6 border border-gray-100">
+        <dt class="truncate text-sm font-medium text-gray-500">Ethylene</dt>
+        <dd class="mt-1 flex items-baseline justify-between md:block lg:flex">
+          <div class="flex items-baseline text-2xl font-semibold text-gray-900">
+            {{ metrics.ethylene.value }}
+            <span class="ml-1 text-sm font-medium text-gray-500">{{ metrics.ethylene.unit }}</span>
+          </div>
+          <div class="inline-flex items-baseline rounded-full px-2.5 py-0.5 text-sm font-medium bg-green-100 text-green-800 md:mt-2 lg:mt-0">
+            {{ metrics.ethylene.status }}
+          </div>
+        </dd>
+      </div>
+
+      <!-- Battery Card -->
+      <div class="overflow-hidden rounded-lg bg-white px-4 py-5 shadow sm:p-6 border border-gray-100">
+        <dt class="truncate text-sm font-medium text-gray-500">Battery</dt>
+        <dd class="mt-1 flex items-baseline justify-between md:block lg:flex">
+          <div class="flex items-baseline text-2xl font-semibold text-gray-900">
+            {{ metrics.battery.value }}
+            <span class="ml-1 text-sm font-medium text-gray-500">{{ metrics.battery.unit }}</span>
+          </div>
+          <div class="inline-flex items-baseline rounded-full px-2.5 py-0.5 text-sm font-medium bg-green-100 text-green-800 md:mt-2 lg:mt-0">
+            {{ metrics.battery.status }}
+          </div>
+        </dd>
+      </div>
+
+      <!-- Ledger Status Card -->
+      <div class="overflow-hidden rounded-lg bg-slate-900 px-4 py-5 shadow sm:p-6">
+        <dt class="truncate text-sm font-medium text-slate-300">Audit Ledger</dt>
+        <dd class="mt-1 flex items-baseline justify-between md:block lg:flex">
+          <div class="flex items-baseline text-xl font-bold text-white tracking-widest">
+            {{ metrics.ledger.value }}
+          </div>
+          <div class="inline-flex items-baseline rounded-full px-2.5 py-0.5 text-sm font-medium bg-emerald-500/10 text-emerald-400 md:mt-2 lg:mt-0 ring-1 ring-inset ring-emerald-500/20">
+            {{ metrics.ledger.status }}
+          </div>
+        </dd>
+      </div>
+    </div>
+
+    <!-- Map Section -->
+    <div class="mt-8 grid grid-cols-1 gap-5">
+      <div class="bg-white rounded-lg shadow p-6 border border-gray-100">
+        <div class="flex justify-between items-center mb-4">
+          <h3 class="text-lg font-medium text-gray-900">Live GPS Location</h3>
+          <span class="text-sm text-gray-500">{{ gpsStatus }}</span>
+        </div>
+        <div id="map-container" class="h-96 w-full rounded-md border border-gray-200"></div>
+      </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="mt-8 grid grid-cols-1 gap-5 lg:grid-cols-3">
+      <!-- Temperature History -->
+      <div class="bg-white rounded-lg shadow p-6 border border-gray-100">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">Temperature</h3>
+        <div class="h-64">
+          <canvas baseChart 
+            [data]="tempChartData" 
+            [options]="commonLineChartOptions" 
+            type="line">
+          </canvas>
+        </div>
+      </div>
+
+      <!-- Humidity History -->
+      <div class="bg-white rounded-lg shadow p-6 border border-gray-100">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">Humidity</h3>
+        <div class="h-64 flex justify-center">
+          <canvas baseChart 
+            [data]="humChartData" 
+            [options]="commonLineChartOptions" 
+            type="line">
+          </canvas>
+        </div>
+      </div>
+
+      <!-- Ethylene History -->
+      <div class="bg-white rounded-lg shadow p-6 border border-gray-100">
+        <h3 class="text-lg font-medium text-gray-900 mb-4">Ethylene</h3>
+        <div class="h-64 flex justify-center">
+          <canvas baseChart 
+            [data]="ethChartData" 
+            [options]="commonLineChartOptions" 
+            type="line">
+          </canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Security & Camera Feed Section -->
+    <div class="mt-8">
+      <h2 class="text-xl font-bold text-gray-900 mb-4">Security & Camera Feed (NODE-DEMO-01)</h2>
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        
+        <!-- Door Status -->
+        <div class="bg-white rounded-lg shadow p-6 border border-gray-100 flex flex-col justify-center items-center">
+          <div class="h-20 w-20 rounded-full bg-red-100 flex items-center justify-center mb-4">
+            <i class="fas fa-door-open text-3xl text-red-600"></i>
+          </div>
+          <h3 class="text-2xl font-bold text-gray-900">DOOR OPEN</h3>
+          <p class="text-gray-500 mt-2 text-center text-sm">Reed switch triggered at 10:42 AM.</p>
+          <button class="mt-6 w-full bg-slate-900 text-white font-medium py-2 rounded-lg hover:bg-slate-800 transition-colors">
+            Acknowledge Alert
+          </button>
+        </div>
+
+        <!-- Camera Feed / Last Capture -->
+        <div class="lg:col-span-2 bg-slate-900 rounded-lg shadow overflow-hidden relative group">
+          <div class="absolute top-4 left-4 bg-red-600 text-white text-xs font-bold px-3 py-1 rounded-full animate-pulse z-10 shadow-lg">
+            LIVE ALERT IMAGE
+          </div>
+          <div class="absolute top-4 right-4 bg-black/50 backdrop-blur text-white text-xs font-mono px-3 py-1 rounded z-10">
+            2026-09-26 10:42:01
+          </div>
+          <!-- Placeholder image for the ESP32-CAM capture -->
+          <div class="w-full h-72 bg-slate-800 flex items-center justify-center relative">
+            <img src="https://images.unsplash.com/photo-1586528116311-ad8ed3c84a0d?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80" alt="Warehouse door opened" class="absolute inset-0 w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-300">
+            <div class="absolute inset-0 bg-gradient-to-t from-slate-900 to-transparent opacity-60"></div>
+          </div>
+          <div class="p-4 bg-slate-900 flex justify-between items-center text-white">
+            <div>
+              <p class="font-medium">Camera: ESP32-CAM (Front Door)</p>
+              <p class="text-xs text-slate-400">Trigger: Reed Switch Disconnect</p>
+            </div>
+            <button class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-sm font-medium transition-colors">
+              <i class="fas fa-download mr-1"></i> Save Image
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
