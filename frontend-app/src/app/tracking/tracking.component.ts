@@ -105,6 +105,7 @@ import { ChartConfiguration, ChartOptions } from 'chart.js';
     }
   `]
 })
+export class TrackingComponent implements OnInit, AfterViewInit {
   private map!: L.Map;
   private marker!: L.Marker;
   private polyline!: L.Polyline;
