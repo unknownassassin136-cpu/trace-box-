@@ -1,10 +1,9 @@
-import { Component, OnInit, OnDestroy, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { HttpClient } from '@angular/common/http';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, ChartOptions } from 'chart.js';
-import { SupabaseService } from '../services/supabase.service';
+import { ApiService } from '../services/api.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -93,16 +92,16 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     maintainAspectRatio: false
   };
 
-  constructor(private supabaseService: SupabaseService, private http: HttpClient) {}
+  constructor(private apiService: ApiService) {}
 
   async ngOnInit() {
     await this.loadInitialData();
     
     // Subscribe to live telemetry inserts
-    this.subscription = this.supabaseService.subscribeToTelemetry((payload) => {
-      // Ensure we only process data for our target device for now
-      if (payload.new && payload.new.device_id === 'NODE-DEMO-01') {
-        this.handleNewTelemetry(payload.new);
+    this.subscription = this.apiService.subscribeToTelemetry((payload) => {
+      // payload format will be the raw object emitted from socket.io
+      if (payload && payload.device_id === 'NODE-DEMO-01') {
+        this.handleNewTelemetry(payload);
       }
     });
   }
@@ -120,7 +119,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
 
   async loadInitialData() {
     try {
-      const data = await this.supabaseService.getTelemetry('NODE-DEMO-01');
+      const data = await this.apiService.getTelemetry('NODE-DEMO-01');
       if (data && data.length > 0) {
         // Reverse to get chronological order for charts (oldest first)
         const chronologicalData = [...data].reverse();

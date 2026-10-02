@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
-import { SupabaseService } from '../services/supabase.service';
+import { AuthService } from '../services/auth.service';
 
 @Component({
   selector: 'app-layout',
@@ -13,14 +13,14 @@ import { SupabaseService } from '../services/supabase.service';
 export class LayoutComponent {
   isSidebarOpen = true;
 
-  constructor(private router: Router, private supabase: SupabaseService) {}
+  constructor(private router: Router, private auth: AuthService) {}
 
   toggleSidebar() {
     this.isSidebarOpen = !this.isSidebarOpen;
   }
 
   async logout() {
-    await this.supabase.signOut();
+    await this.auth.signOut();
     this.router.navigate(['/login']);
   }
 }

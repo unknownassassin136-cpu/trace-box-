@@ -2,7 +2,7 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { SupabaseService } from '../services/supabase.service';
+import { AuthService } from '../services/auth.service';
 
 @Component({
   selector: 'app-login',
@@ -17,18 +17,18 @@ export class LoginComponent {
   errorMessage = '';
   isLoading = false;
   
-  constructor(private router: Router, private supabase: SupabaseService) {}
+  constructor(private router: Router, private auth: AuthService) {}
 
   async login() {
     this.errorMessage = '';
     this.isLoading = true;
 
     try {
-      // Real Supabase Auth Integration
-      const { error } = await this.supabase.signIn(this.email, this.password);
+      // Backend Auth Proxy Integration
+      const response = await this.auth.signIn(this.email, this.password);
       
-      if (error) {
-        throw error;
+      if (response && response.error) {
+        throw new Error(response.error.message);
       }
 
       // Success!
