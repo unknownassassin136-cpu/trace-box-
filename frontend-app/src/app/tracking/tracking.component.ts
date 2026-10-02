@@ -137,6 +137,9 @@ export class TrackingComponent implements OnInit, AfterViewInit {
 
   constructor(private api: ApiService) {}
 
+  private pollingInterval: any;
+  private lastReadingId: any = null;
+
   ngOnInit() {
     this.api.get('/shipments').subscribe({
       next: (res) => {
@@ -144,25 +147,51 @@ export class TrackingComponent implements OnInit, AfterViewInit {
         if (this.shipments.length > 0) {
           this.selectedShipmentId = this.shipments[0].shipmentId;
           this.loadShipmentRoute(this.shipments[0]);
+          this.pollTelemetryData(); // Initial fetch
         }
       }
     });
 
-    this.api.onTelemetryUpdate().subscribe((data) => {
-      // Find active shipment for this device
-      const activeShipment = this.shipments.find(s => s.shipmentId === this.selectedShipmentId);
-      if (activeShipment && data.device_id === activeShipment.deviceId) {
-        // Update Marker
-        if (this.marker) {
-          this.marker.setLatLng([data.lat, data.lng]);
-          this.marker.getPopup()?.setContent(`<b class="text-slate-800">${data.device_id}</b><br>Speed: ${data.speed} km/h`);
-          this.map.panTo([data.lat, data.lng]);
-        }
+    // Fallback: Polling every 10 seconds for Vercel deployments where WebSockets fail
+    this.pollingInterval = setInterval(() => {
+      this.pollTelemetryData();
+    }, 10000);
+  }
+
+  ngOnDestroy() {
+    if (this.pollingInterval) {
+      clearInterval(this.pollingInterval);
+    }
+  }
+
+  async pollTelemetryData() {
+    if (!this.selectedShipmentId) return;
+    
+    const activeShipment = this.shipments.find(s => s.shipmentId === this.selectedShipmentId);
+    if (!activeShipment) return;
+
+    try {
+      const data = await this.api.getTelemetry(activeShipment.deviceId);
+      if (data && data.length > 0) {
+        const latest = data[0];
         
-        // Update Chart
-        this.updateChart(data.accelX, data.accelY, data.accelZ);
+        if (latest.id !== this.lastReadingId) {
+          this.lastReadingId = latest.id;
+          
+          // Update Marker
+          if (this.marker && latest.lat !== null && latest.lng !== null) {
+            this.marker.setLatLng([latest.lat, latest.lng]);
+            this.marker.getPopup()?.setContent(`<b class="text-slate-800">${activeShipment.deviceId}</b><br>Speed: ${latest.speed || 0} km/h`);
+            this.map.panTo([latest.lat, latest.lng]);
+          }
+          
+          // Update Chart
+          this.updateChart(latest.accelX || 0, latest.accelY || 0, latest.accelZ || 0);
+        }
       }
-    });
+    } catch (err) {
+      console.error('Failed to poll tracking telemetry', err);
+    }
   }
 
   onShipmentChange(event: any) {

@@ -95,18 +95,19 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   devices: any[] = [];
   selectedDeviceId: string = '';
 
+  private pollingInterval: any;
+
   constructor(private apiService: ApiService) {}
 
   async ngOnInit() {
     await this.fetchDevices();
     
-    // Subscribe to live telemetry inserts
-    this.subscription = this.apiService.subscribeToTelemetry((payload) => {
-      // payload format will be the raw object emitted from socket.io
-      if (payload && this.selectedDeviceId && payload.device_id === this.selectedDeviceId) {
-        this.handleNewTelemetry(payload);
+    // Fallback: Polling every 10 seconds for Vercel deployments where WebSockets fail
+    this.pollingInterval = setInterval(async () => {
+      if (this.selectedDeviceId) {
+        await this.pollLatestData();
       }
-    });
+    }, 10000);
   }
 
   ngAfterViewInit() {
@@ -114,8 +115,8 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    if (this.subscription) {
-      this.subscription.unsubscribe();
+    if (this.pollingInterval) {
+      clearInterval(this.pollingInterval);
     }
   }
 
@@ -136,7 +137,26 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   onDeviceChange() {
+    this.lastReadingId = null;
     this.loadInitialData();
+  }
+
+  private lastReadingId: any = null;
+
+  async pollLatestData() {
+    try {
+      const data = await this.apiService.getTelemetry(this.selectedDeviceId);
+      if (data && data.length > 0) {
+        const latest = data[0];
+        // If we have a new reading that differs from the last one (using id or sequence)
+        if (latest.id !== this.lastReadingId) {
+          this.lastReadingId = latest.id;
+          this.handleNewTelemetry(latest);
+        }
+      }
+    } catch (err) {
+      console.error('Polling error', err);
+    }
   }
 
   async loadInitialData() {
@@ -172,6 +192,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
         });
 
         // Update cards and map with the most recent reading (index 0)
+        this.lastReadingId = data[0].id;
         this.updateCards(data[0]);
       } else {
         this.gpsStatus = 'No data available';
