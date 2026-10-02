@@ -1,3 +1,5 @@
+import 'dotenv/config';
+
 import { app, httpServer } from './app';
 import { mqttService } from './mqtt/mqtt.service';
 
