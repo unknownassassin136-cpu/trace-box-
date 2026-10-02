@@ -26,6 +26,7 @@ import authRoutes from './modules/auth/auth.routes';
 import deviceRoutes from './modules/devices/device.routes';
 import telemetryRoutes from './modules/telemetry/telemetry.routes';
 import shipmentRoutes from './modules/shipments/shipment.routes';
+import ledgerRoutes from './modules/ledger/ledger.routes';
 import { authMiddleware } from './middleware/auth.middleware';
 
 // Setup API routes
@@ -33,6 +34,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/devices', authMiddleware, deviceRoutes);
 app.use('/api/shipments', authMiddleware, shipmentRoutes);
 app.use('/api/telemetry', telemetryRoutes);
+app.use('/api/ledger', authMiddleware, ledgerRoutes);
 
 // Error handling middleware
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {

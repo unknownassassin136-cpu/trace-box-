@@ -1,5 +1,6 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { ApiService } from '../services/api.service';
 
 @Component({
   selector: 'app-audit-ledger',
@@ -22,7 +23,17 @@ import { CommonModule } from '@angular/common';
           <input type="text" placeholder="Search hash, shipment, or device..." class="bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white text-sm w-96 focus:outline-none focus:border-indigo-500">
         </div>
         
-        <div class="overflow-x-auto">
+        <div *ngIf="isLoading" class="text-center py-12">
+          <i class="fas fa-circle-notch fa-spin text-4xl text-blue-500 mb-4"></i>
+          <p class="text-slate-400">Verifying ledger entries...</p>
+        </div>
+
+        <div *ngIf="!isLoading && ledgerEntries.length === 0" class="text-center py-12 bg-slate-800/50">
+          <i class="fas fa-shield-alt text-6xl text-slate-600 mb-4"></i>
+          <p class="text-slate-400">No cryptographic events recorded yet.</p>
+        </div>
+
+        <div class="overflow-x-auto" *ngIf="!isLoading && ledgerEntries.length > 0">
           <table class="w-full text-left text-sm text-slate-300">
             <thead class="bg-slate-900/50 text-slate-400 uppercase text-xs">
               <tr>
@@ -37,7 +48,7 @@ import { CommonModule } from '@angular/common';
             <tbody class="divide-y divide-slate-700 font-mono text-xs">
               <tr *ngFor="let entry of ledgerEntries" class="hover:bg-slate-700/30 transition-colors">
                 <td class="px-6 py-4 text-white">#{{ entry.seq }}</td>
-                <td class="px-6 py-4">{{ entry.timestamp }}</td>
+                <td class="px-6 py-4">{{ entry.timestamp | date:'medium' }}</td>
                 <td class="px-6 py-4 font-sans">
                   <span class="px-2 py-1 rounded text-xs font-bold"
                     [ngClass]="entry.type === 'TAMPER' ? 'bg-red-500/20 text-red-400' : (entry.type === 'TEMP_BREACH' ? 'bg-amber-500/20 text-amber-400' : 'bg-blue-500/20 text-blue-400')">
@@ -59,12 +70,22 @@ import { CommonModule } from '@angular/common';
     </div>
   `
 })
-export class AuditLedgerComponent {
-  ledgerEntries = [
-    { seq: 1042, timestamp: '2026-09-26 13:42:01', type: 'TAMPER', device: 'NODE-DEMO-01', hash: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855' },
-    { seq: 1041, timestamp: '2026-09-26 12:15:30', type: 'TEMP_BREACH', device: 'NODE-DEMO-01', hash: '8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92' },
-    { seq: 1040, timestamp: '2026-09-26 08:00:00', type: 'DISPATCH', device: 'NODE-DEMO-01', hash: 'a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3' },
-    { seq: 1039, timestamp: '2026-09-25 18:30:12', type: 'ARRIVAL', device: 'NODE-DEMO-02', hash: '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4' },
-    { seq: 1038, timestamp: '2026-09-25 09:14:55', type: 'DISPATCH', device: 'NODE-DEMO-02', hash: '9283e07d0f1712a4d048d28c34796fb82601c7fb880bb661005a805096b797fc' },
-  ];
+export class AuditLedgerComponent implements OnInit {
+  ledgerEntries: any[] = [];
+  isLoading = true;
+
+  constructor(private api: ApiService) {}
+
+  ngOnInit() {
+    this.api.get('/ledger').subscribe({
+      next: (res) => {
+        this.ledgerEntries = res;
+        this.isLoading = false;
+      },
+      error: (err) => {
+        console.error('Failed to load ledger', err);
+        this.isLoading = false;
+      }
+    });
+  }
 }
