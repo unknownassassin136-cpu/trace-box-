@@ -16,9 +16,11 @@ import { ChartConfiguration, ChartOptions } from 'chart.js';
           <p class="text-slate-400 text-sm">Real-time GPS coordinates and Inertial Measurement Unit (IMU) data</p>
         </div>
         <div class="flex gap-4">
-          <select class="bg-slate-800 text-white border border-slate-700 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500">
-            <option>SHIP-100234 (Active)</option>
-            <option>SHIP-100235 (Delivered)</option>
+          <select (change)="onShipmentChange($event)" class="bg-slate-800 text-white border border-slate-700 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500">
+            <option *ngIf="shipments.length === 0" value="">No active shipments</option>
+            <option *ngFor="let s of shipments" [value]="s.shipmentId">
+              {{ s.shipmentId }} ({{ s.origin }} &rarr; {{ s.destination }})
+            </option>
           </select>
           <button class="bg-slate-800 hover:bg-slate-700 text-white px-4 py-2 rounded-lg font-medium transition-colors border border-slate-700 flex items-center gap-2">
             <i class="fas fa-sync-alt"></i> Refresh
@@ -103,16 +105,19 @@ import { ChartConfiguration, ChartOptions } from 'chart.js';
     }
   `]
 })
-export class TrackingComponent implements AfterViewInit {
   private map!: L.Map;
-
+  private marker!: L.Marker;
+  private polyline!: L.Polyline;
+  shipments: any[] = [];
+  selectedShipmentId: string = '';
+  
   // IMU Data Chart (X, Y, Z forces)
   public accelChartData: ChartConfiguration<'line'>['data'] = {
     labels: ['-30s', '-25s', '-20s', '-15s', '-10s', '-5s', 'Now'],
     datasets: [
-      { data: [0.1, 0.2, 0.1, 0.3, 3.2, 0.5, 0.1], label: 'Z-Axis (G)', borderColor: '#10b981', backgroundColor: 'transparent', tension: 0.3, borderWidth: 2 },
-      { data: [0.0, 0.1, 0.0, -0.1, 0.8, -0.2, 0.0], label: 'X-Axis (G)', borderColor: '#3b82f6', backgroundColor: 'transparent', tension: 0.3, borderWidth: 2 },
-      { data: [0.0, 0.0, -0.1, 0.1, 1.2, 0.1, 0.0], label: 'Y-Axis (G)', borderColor: '#f59e0b', backgroundColor: 'transparent', tension: 0.3, borderWidth: 2 }
+      { data: [0, 0, 0, 0, 0, 0, 0], label: 'Z-Axis (G)', borderColor: '#10b981', backgroundColor: 'transparent', tension: 0.3, borderWidth: 2 },
+      { data: [0, 0, 0, 0, 0, 0, 0], label: 'X-Axis (G)', borderColor: '#3b82f6', backgroundColor: 'transparent', tension: 0.3, borderWidth: 2 },
+      { data: [0, 0, 0, 0, 0, 0, 0], label: 'Y-Axis (G)', borderColor: '#f59e0b', backgroundColor: 'transparent', tension: 0.3, borderWidth: 2 }
     ]
   };
   public accelChartOptions: ChartOptions<'line'> = {
@@ -126,21 +131,85 @@ export class TrackingComponent implements AfterViewInit {
     plugins: { legend: { labels: { color: '#cbd5e1' } } }
   };
 
+  constructor(private api: ApiService) {}
+
+  ngOnInit() {
+    this.api.get('/shipments').subscribe({
+      next: (res) => {
+        this.shipments = res;
+        if (this.shipments.length > 0) {
+          this.selectedShipmentId = this.shipments[0].shipmentId;
+          this.loadShipmentRoute(this.shipments[0]);
+        }
+      }
+    });
+
+    this.api.onTelemetryUpdate().subscribe((data) => {
+      // Find active shipment for this device
+      const activeShipment = this.shipments.find(s => s.shipmentId === this.selectedShipmentId);
+      if (activeShipment && data.device_id === activeShipment.deviceId) {
+        // Update Marker
+        if (this.marker) {
+          this.marker.setLatLng([data.lat, data.lng]);
+          this.marker.getPopup()?.setContent(`<b class="text-slate-800">${data.device_id}</b><br>Speed: ${data.speed} km/h`);
+          this.map.panTo([data.lat, data.lng]);
+        }
+        
+        // Update Chart
+        this.updateChart(data.accelX, data.accelY, data.accelZ);
+      }
+    });
+  }
+
+  onShipmentChange(event: any) {
+    const sId = event.target.value;
+    const s = this.shipments.find(x => x.shipmentId === sId);
+    if(s) {
+      this.selectedShipmentId = sId;
+      this.loadShipmentRoute(s);
+    }
+  }
+
+  loadShipmentRoute(shipment: any) {
+    if (this.polyline) {
+      this.map.removeLayer(this.polyline);
+    }
+    
+    if (shipment.routePolyline) {
+      try {
+        const geojson = JSON.parse(shipment.routePolyline);
+        // OSRM coordinates are [lon, lat], Leaflet expects [lat, lon]
+        const latlngs = geojson.coordinates.map((c: any) => [c[1], c[0]]);
+        this.polyline = L.polyline(latlngs, { color: '#3b82f6', weight: 4, opacity: 0.8, dashArray: '10, 10' }).addTo(this.map);
+        this.map.fitBounds(this.polyline.getBounds());
+      } catch (e) {
+        console.error('Failed to parse route polyline');
+      }
+    }
+  }
+
+  updateChart(x: number, y: number, z: number) {
+    const ds = this.accelChartData.datasets;
+    // Shift data left
+    ds[0].data.shift(); ds[0].data.push(z);
+    ds[1].data.shift(); ds[1].data.push(x);
+    ds[2].data.shift(); ds[2].data.push(y);
+    // Angular/Chart.js requires a new reference to update
+    this.accelChartData = { ...this.accelChartData };
+  }
+
   ngAfterViewInit(): void {
     this.initMap();
   }
 
   private initMap(): void {
-    // Initialize map centered roughly in India
     this.map = L.map('map').setView([19.0760, 72.8777], 6);
 
-    // Standard OpenStreetMap tiles (which we invert via CSS for dark mode)
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       maxZoom: 18,
       attribution: '© OpenStreetMap'
     }).addTo(this.map);
 
-    // Create a custom icon for the truck/device
     const truckIcon = L.divIcon({
       className: 'custom-div-icon',
       html: `<div class="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center shadow-lg border-2 border-white ring-4 ring-blue-500/30 animate-pulse">
@@ -150,18 +219,7 @@ export class TrackingComponent implements AfterViewInit {
       iconAnchor: [16, 16]
     });
 
-    // Mock Route line
-    const latlngs: L.LatLngExpression[] = [
-      [19.0760, 72.8777], // Mumbai
-      [21.1458, 79.0882], // Nagpur
-      [28.7041, 77.1025]  // Delhi
-    ];
-
-    L.polyline(latlngs, { color: '#3b82f6', weight: 4, opacity: 0.8, dashArray: '10, 10' }).addTo(this.map);
-
-    // Current location marker (Nagpur)
-    L.marker([21.1458, 79.0882], { icon: truckIcon }).addTo(this.map)
-      .bindPopup('<b class="text-slate-800">NODE-DEMO-01</b><br>Speed: 45 km/h')
-      .openPopup();
+    this.marker = L.marker([19.0760, 72.8777], { icon: truckIcon }).addTo(this.map)
+      .bindPopup('<b class="text-slate-800">Waiting for data...</b>');
   }
 }

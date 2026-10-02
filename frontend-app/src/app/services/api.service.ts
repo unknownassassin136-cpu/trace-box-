@@ -21,6 +21,14 @@ export class ApiService {
     });
   }
 
+  get(endpoint: string) {
+    return this.http.get<any>(`/api${endpoint}`);
+  }
+
+  post(endpoint: string, body: any) {
+    return this.http.post<any>(`/api${endpoint}`, body);
+  }
+
   async getTelemetry(deviceId: string) {
     return firstValueFrom(
       this.http.get<any[]>(`/api/telemetry/${deviceId}`)
@@ -34,5 +42,12 @@ export class ApiService {
         this.socket.off('new_telemetry', callback);
       }
     };
+  }
+
+  onTelemetryUpdate() {
+    return new import('rxjs').Observable<any>((observer) => {
+      this.socket.on('new_telemetry', (data) => observer.next(data));
+      return () => this.socket.off('new_telemetry');
+    });
   }
 }
