@@ -34,6 +34,48 @@ export class EventService {
 
       console.log(`[EventService] Telemetry saved for ${deviceId}`);
       
+      // Check for PENDING dynamic shipments
+      if (data.lat !== undefined && data.lat !== 0 && data.lng !== undefined && data.lng !== 0) {
+        const { shipments } = await import('../../db/schema');
+        const pendingShipment = await db.query.shipments.findFirst({
+          where: (s, { eq, and }) => and(eq(s.deviceId, deviceId), eq(s.status, 'PENDING'))
+        });
+
+        if (pendingShipment) {
+          console.log(`[EventService] Found PENDING shipment ${pendingShipment.shipmentId}. Activating route...`);
+          try {
+            const axios = (await import('axios')).default;
+            const destRes = await axios.get(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(pendingShipment.destination)}&format=json&limit=1`, {
+              headers: { 'User-Agent': 'TraceNodeApp' }
+            });
+            
+            if (destRes.data.length > 0) {
+              const dLat = destRes.data[0].lat;
+              const dLon = destRes.data[0].lon;
+              const oLat = data.lat;
+              const oLon = data.lng;
+
+              const osrmRes = await axios.get(`http://router.project-osrm.org/route/v1/driving/${oLon},${oLat};${dLon},${dLat}?geometries=geojson&overview=full`);
+              let routePolyline = null;
+              if (osrmRes.data.routes && osrmRes.data.routes.length > 0) {
+                routePolyline = JSON.stringify(osrmRes.data.routes[0].geometry);
+              }
+
+              await db.update(shipments)
+                .set({
+                  origin: `${oLat.toFixed(5)}, ${oLon.toFixed(5)}`,
+                  routePolyline,
+                  status: 'IN_TRANSIT'
+                })
+                .where(eq(shipments.shipmentId, pendingShipment.shipmentId));
+              console.log(`[EventService] Activated shipment ${pendingShipment.shipmentId} with live GPS`);
+            }
+          } catch (e: any) {
+            console.error('[EventService] Failed to activate dynamic shipment:', e.message);
+          }
+        }
+      }
+
       // Evaluate Thresholds
       await this.evaluateThresholds(deviceId, data);
 

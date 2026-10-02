@@ -37,8 +37,8 @@ import { ApiService } from '../services/api.service';
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-slate-300 mb-1">Origin City/Address</label>
-              <input [(ngModel)]="newShipment.origin" type="text" placeholder="e.g. Mumbai, India" 
+              <label class="block text-sm font-medium text-slate-300 mb-1">Origin City/Address (Optional)</label>
+              <input [(ngModel)]="newShipment.origin" type="text" placeholder="Leave blank to use live GPS node location" 
                 class="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500">
             </div>
 
@@ -152,8 +152,8 @@ export class ShipmentsComponent implements OnInit {
   }
 
   createShipment() {
-    if (!this.newShipment.shipmentId || !this.newShipment.deviceId || !this.newShipment.origin || !this.newShipment.destination) {
-      this.createError = 'All fields are required';
+    if (!this.newShipment.shipmentId || !this.newShipment.deviceId || !this.newShipment.destination) {
+      this.createError = 'Shipment ID, Device, and Destination are required';
       return;
     }
 

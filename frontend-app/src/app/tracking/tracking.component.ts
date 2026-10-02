@@ -110,6 +110,8 @@ export class TrackingComponent implements OnInit, AfterViewInit {
   private map!: L.Map;
   private marker!: L.Marker;
   private polyline!: L.Polyline;
+  private originMarker!: L.Marker;
+  private destMarker!: L.Marker;
   shipments: any[] = [];
   selectedShipmentId: string = '';
   
@@ -176,6 +178,9 @@ export class TrackingComponent implements OnInit, AfterViewInit {
     if (this.polyline) {
       this.map.removeLayer(this.polyline);
     }
+    // Remove previous origin/dest markers
+    if (this.originMarker) this.map.removeLayer(this.originMarker);
+    if (this.destMarker) this.map.removeLayer(this.destMarker);
     
     if (shipment.routePolyline) {
       try {
@@ -183,7 +188,22 @@ export class TrackingComponent implements OnInit, AfterViewInit {
         // OSRM coordinates are [lon, lat], Leaflet expects [lat, lon]
         const latlngs = geojson.coordinates.map((c: any) => [c[1], c[0]]);
         this.polyline = L.polyline(latlngs, { color: '#3b82f6', weight: 4, opacity: 0.8, dashArray: '10, 10' }).addTo(this.map);
-        this.map.fitBounds(this.polyline.getBounds());
+        
+        // Add start and end pins
+        if (latlngs.length > 0) {
+          const startHtml = `<div class="bg-green-600 text-white rounded-full w-6 h-6 flex items-center justify-center shadow-lg border-2 border-white"><i class="fas fa-play text-[10px]"></i></div>`;
+          const endHtml = `<div class="bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center shadow-lg border-2 border-white"><i class="fas fa-flag-checkered text-[10px]"></i></div>`;
+          
+          this.originMarker = L.marker(latlngs[0], {
+            icon: L.divIcon({ className: 'custom-div-icon', html: startHtml, iconSize: [24, 24], iconAnchor: [12, 12] })
+          }).addTo(this.map).bindPopup('<b>Origin</b>');
+          
+          this.destMarker = L.marker(latlngs[latlngs.length - 1], {
+            icon: L.divIcon({ className: 'custom-div-icon', html: endHtml, iconSize: [24, 24], iconAnchor: [12, 12] })
+          }).addTo(this.map).bindPopup('<b>Destination</b>');
+        }
+        
+        this.map.fitBounds(this.polyline.getBounds(), { padding: [50, 50] });
       } catch (e) {
         console.error('Failed to parse route polyline');
       }
