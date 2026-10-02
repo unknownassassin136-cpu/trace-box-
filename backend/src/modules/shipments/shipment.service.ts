@@ -38,7 +38,7 @@ export class ShipmentService {
         const dLon = destRes.data[0].lon;
 
         // 3. Get route from OSRM
-        const osrmRes = await axios.get(`http://router.project-osrm.org/route/v1/driving/${oLon},${oLat};${dLon},${dLat}?geometries=geojson`);
+        const osrmRes = await axios.get(`http://router.project-osrm.org/route/v1/driving/${oLon},${oLat};${dLon},${dLat}?geometries=geojson&overview=full`);
         if (osrmRes.data.routes && osrmRes.data.routes.length > 0) {
           routePolyline = JSON.stringify(osrmRes.data.routes[0].geometry);
         }
