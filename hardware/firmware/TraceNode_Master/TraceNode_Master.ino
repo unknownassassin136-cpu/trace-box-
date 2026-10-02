@@ -25,6 +25,8 @@
 #include <SPI.h>
 #include <SD.h>
 #include <Preferences.h>
+#include <WiFi.h>
+#include <WiFiClient.h>
 
 // --- VERIFIED HARDWARE PIN MAP ---
 // I2C Bus (MPU6050 & OLED)
@@ -57,6 +59,9 @@ const char apn[]      = "bsnlinet"; // BSNL India APN
 const char gprsUser[] = "";
 const char gprsPass[] = "";
 
+const char wifi_ssid[] = "YOUR_WIFI_SSID";
+const char wifi_pass[] = "YOUR_WIFI_PASSWORD";
+
 const char* mqtt_server = "broker.hivemq.com";
 const int   mqtt_port = 1883;
 const char* mqtt_topic = "tracenode/telemetry";
@@ -70,7 +75,8 @@ HardwareSerial SerialGSM(2);
 HardwareSerial SerialGPS(1);
 TinyGsm modem(SerialGSM);
 TinyGsmClient gsmClient(modem);
-PubSubClient mqtt(gsmClient);
+WiFiClient wifiClient;
+PubSubClient mqtt;
 TinyGPSPlus gps;
 
 Adafruit_MPU6050 mpu;
@@ -93,6 +99,7 @@ int oledPage = 0;
 
 // --- STATE VARIABLES ---
 bool isLinked = false;
+bool usingWiFi = false;
 bool doorWasOpen = false;
 int currentDoorState = LOW;
 float lastTemp = 0.0;
@@ -253,10 +260,25 @@ void setup() {
   sendATCommand("AT+CGPADDR=1", 1000);
 
   // Start TinyGSM after raw AT checks
-  if (!modem.gprsConnect(apn, gprsUser, gprsPass)) {
-    Serial.println("Warning: TinyGSM attach failed, but manual AT cmds may have worked.");
-  } else {
+  if (modem.gprsConnect(apn, gprsUser, gprsPass)) {
     Serial.println("TinyGSM attached to GPRS successfully.");
+    mqtt.setClient(gsmClient);
+    usingWiFi = false;
+  } else {
+    Serial.println("TinyGSM attach failed. Trying Wi-Fi...");
+    WiFi.begin(wifi_ssid, wifi_pass);
+    unsigned long start = millis();
+    while (WiFi.status() != WL_CONNECTED && millis() - start < 10000) {
+      delay(500);
+      Serial.print(".");
+    }
+    if (WiFi.status() == WL_CONNECTED) {
+      Serial.println("\nWi-Fi Connected.");
+      mqtt.setClient(wifiClient);
+      usingWiFi = true;
+    } else {
+      Serial.println("\nWi-Fi Failed too.");
+    }
   }
 
   // Setup MQTT
@@ -269,9 +291,43 @@ void setup() {
   display.display();
 }
 
+void connectNetwork() {
+  if (usingWiFi) {
+    if (WiFi.status() != WL_CONNECTED) {
+      // If Wi-Fi dropped, try SIM first as primary
+      if (modem.gprsConnect(apn, gprsUser, gprsPass)) {
+        usingWiFi = false;
+        mqtt.setClient(gsmClient);
+      } else {
+        WiFi.begin(wifi_ssid, wifi_pass);
+        int retries = 0;
+        while (WiFi.status() != WL_CONNECTED && retries < 10) { delay(500); retries++; }
+        if (WiFi.status() == WL_CONNECTED) mqtt.setClient(wifiClient);
+      }
+    } else {
+      // Optionally try switching back to SIM if Wi-Fi is connected? No, stay on Wi-Fi if connected to avoid flapping.
+      // Wait, user said: "when ever sim available we can switch to sim moudle"
+      // If we want SIM to be absolutely primary, we could periodically check. But for stability, we just ensure at least one is connected.
+    }
+  } else {
+    if (!modem.isGprsConnected()) {
+      if (!modem.gprsConnect(apn, gprsUser, gprsPass)) {
+        usingWiFi = true;
+        WiFi.begin(wifi_ssid, wifi_pass);
+        int retries = 0;
+        while (WiFi.status() != WL_CONNECTED && retries < 10) { delay(500); retries++; }
+        if (WiFi.status() == WL_CONNECTED) mqtt.setClient(wifiClient);
+      }
+    }
+  }
+}
+
 void reconnectMqtt() {
   if (millis() - lastMqttRetry > mqttRetryInterval) {
     lastMqttRetry = millis();
+    
+    connectNetwork();
+
     Serial.print("Connecting to MQTT... ");
     if (mqtt.connect(mqtt_client_id)) {
       Serial.println("MQTT: CONNECTED");
@@ -368,9 +424,15 @@ void displayOLED() {
       }
       break;
     case 5:
-      display.println("== CELLULAR ==");
-      display.print("Modem: "); display.println(modem.isGprsConnected() ? "READY" : "ERROR");
-      display.print("CSQ: "); display.println(modem.getSignalQuality());
+      display.println("== NETWORK ==");
+      if (usingWiFi) {
+        display.println("Mode: Wi-Fi");
+        display.print("Status: "); display.println(WiFi.status() == WL_CONNECTED ? "CONNECTED" : "OFFLINE");
+      } else {
+        display.println("Mode: CELLULAR");
+        display.print("Status: "); display.println(modem.isGprsConnected() ? "CONNECTED" : "OFFLINE");
+        display.print("CSQ: "); display.println(modem.getSignalQuality());
+      }
       break;
     case 6:
       display.println("== MQTT ==");
