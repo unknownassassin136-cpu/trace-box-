@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, Observable } from 'rxjs';
 import { io, Socket } from 'socket.io-client';
 import { environment } from '../../environments/environment';
 
@@ -45,7 +45,7 @@ export class ApiService {
   }
 
   onTelemetryUpdate() {
-    return new import('rxjs').Observable<any>((observer) => {
+    return new Observable<any>((observer) => {
       this.socket.on('new_telemetry', (data) => observer.next(data));
       return () => this.socket.off('new_telemetry');
     });
