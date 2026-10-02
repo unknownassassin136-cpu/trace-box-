@@ -22,8 +22,7 @@
 #include <DHT.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
-#include <SPI.h>
-#include <SD.h>
+#include <LittleFS.h>
 
 // --- VERIFIED HARDWARE PIN MAP ---
 // I2C Bus (MPU6050 & OLED)
@@ -32,9 +31,6 @@
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
 #define OLED_RESET -1
-
-// SD Card Module (SPI)
-#define SD_CS_PIN 5
 
 // UART2 for Cellular (A7670C)
 #define GSM_RX_PIN 17
@@ -112,21 +108,21 @@ void sendATCommand(const char* cmd, unsigned long timeoutMs = 2000) {
   Serial.println();
 }
 
-// --- QUEUE MANAGEMENT (SD Card) ---
+// --- QUEUE MANAGEMENT (LittleFS) ---
 void saveToQueue(const String& payload) {
   String filename = "/queue/" + String(millis()) + ".json";
-  File file = SD.open(filename, FILE_WRITE);
+  File file = LittleFS.open(filename, FILE_WRITE);
   if (file) {
     file.print(payload);
     file.close();
     Serial.println("OFFLINE SAVED: " + filename);
   } else {
-    Serial.println("FAILED to save offline payload to SD.");
+    Serial.println("FAILED to save offline payload.");
   }
 }
 
 void processQueue() {
-  File root = SD.open("/queue");
+  File root = LittleFS.open("/queue");
   if (!root || !root.isDirectory()) return;
 
   File file = root.openNextFile();
@@ -144,7 +140,7 @@ void processQueue() {
     Serial.println(fullPath);
 
     if (mqtt.publish(mqtt_topic, payload.c_str())) {
-      SD.remove(fullPath);
+      LittleFS.remove(fullPath);
       Serial.println("Queued publish: OK. Deleted file.");
     } else {
       Serial.println("Queued publish: FAILED.");
@@ -162,12 +158,12 @@ void setup() {
   Serial.println("TRACENODE TRACEBOX");
   Serial.println("================================");
 
-  // Initialize SD Card
-  if (!SD.begin(SD_CS_PIN)) {
-    Serial.println("SD Card Mount Failed. Please check wiring.");
+  // Initialize LittleFS
+  if (!LittleFS.begin(true)) {
+    Serial.println("LittleFS Mount Failed");
   } else {
-    if (!SD.exists("/queue")) {
-      SD.mkdir("/queue");
+    if (!LittleFS.exists("/queue")) {
+      LittleFS.mkdir("/queue");
     }
   }
 
@@ -334,7 +330,7 @@ void displayOLED() {
       display.print("Q Size: "); 
       
       int count = 0;
-      File root = SD.open("/queue");
+      File root = LittleFS.open("/queue");
       if(root) {
         File file = root.openNextFile();
         while(file) { count++; file = root.openNextFile(); }

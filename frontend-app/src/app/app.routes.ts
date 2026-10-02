@@ -6,6 +6,7 @@ import { LayoutComponent } from './layout/layout.component';
 import { DashboardComponent } from './dashboard/dashboard.component';
 import { ShipmentsComponent } from './shipments/shipments.component';
 import { DevicesComponent } from './devices/devices.component';
+import { SettingsComponent } from './settings/settings.component';
 import { AuditLedgerComponent } from './audit-ledger/audit-ledger.component';
 import { TrackingComponent } from './tracking/tracking.component';
 import { authGuard } from './guards/auth.guard';
@@ -23,6 +24,7 @@ export const routes: Routes = [
       { path: 'shipments', component: ShipmentsComponent },
       { path: 'devices', component: DevicesComponent },
       { path: 'audit-ledger', component: AuditLedgerComponent },
+      { path: 'settings', component: SettingsComponent },
       { path: '', redirectTo: 'dashboard', pathMatch: 'full' }
     ]
   },

@@ -1,0 +1,54 @@
+import { db } from '../../db';
+import { deviceConfig } from '../../db/schema';
+import { eq } from 'drizzle-orm';
+
+export class DeviceService {
+  async getConfig(deviceId: string) {
+    const config = await db.query.deviceConfig.findFirst({
+      where: eq(deviceConfig.deviceId, deviceId)
+    });
+    
+    if (!config) {
+      // Return defaults if none exists
+      return {
+        deviceId,
+        minTemp: 2.0,
+        maxTemp: 8.0,
+        minHumidity: 30.0,
+        maxHumidity: 65.0,
+        minEthylene: 0.0,
+        maxEthylene: 150.0,
+        minShock: 0.0,
+        maxShock: 1.5
+      };
+    }
+    return config;
+  }
+
+  async updateConfig(deviceId: string, payload: { 
+    minTemp: number, maxTemp: number, 
+    minHumidity: number, maxHumidity: number, 
+    minEthylene: number, maxEthylene: number, 
+    minShock: number, maxShock: number 
+  }) {
+    const existing = await db.query.deviceConfig.findFirst({
+      where: eq(deviceConfig.deviceId, deviceId)
+    });
+
+    if (existing) {
+      const updated = await db.update(deviceConfig)
+        .set({ ...payload, updatedAt: new Date() })
+        .where(eq(deviceConfig.deviceId, deviceId))
+        .returning();
+      return updated[0];
+    } else {
+      const inserted = await db.insert(deviceConfig)
+        .values({
+          deviceId,
+          ...payload
+        })
+        .returning();
+      return inserted[0];
+    }
+  }
+}

@@ -28,6 +28,21 @@ export const devices = pgTable('devices', {
   updatedAt: timestamp('updated_at').defaultNow().notNull()
 });
 
+// Device Configuration Table
+export const deviceConfig = pgTable('device_config', {
+  id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
+  deviceId: text('device_id').notNull().unique().references(() => devices.deviceId),
+  minTemp: doublePrecision('min_temp').default(2.0).notNull(),
+  maxTemp: doublePrecision('max_temp').default(8.0).notNull(),
+  minHumidity: doublePrecision('min_humidity').default(30.0).notNull(),
+  maxHumidity: doublePrecision('max_humidity').default(65.0).notNull(),
+  minEthylene: doublePrecision('min_ethylene').default(0.0).notNull(),
+  maxEthylene: doublePrecision('max_ethylene').default(150.0).notNull(),
+  minShock: doublePrecision('min_shock').default(0.0).notNull(),
+  maxShock: doublePrecision('max_shock').default(1.5).notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull()
+});
+
 // Shipments Table
 export const shipments = pgTable('shipments', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),

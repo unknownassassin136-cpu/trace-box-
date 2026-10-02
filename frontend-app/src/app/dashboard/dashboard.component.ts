@@ -1,37 +1,20 @@
 import { Component, OnInit, OnDestroy, AfterViewInit, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
 import { BaseChartDirective } from 'ng2-charts';
 import { ChartConfiguration, ChartOptions } from 'chart.js';
 import { SupabaseService } from '../services/supabase.service';
-import * as L from 'leaflet';
-
-// Fix leaflet icon issue in angular
-const iconRetinaUrl = 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png';
-const iconUrl = 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png';
-const shadowUrl = 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png';
-const iconDefault = L.icon({
-  iconRetinaUrl,
-  iconUrl,
-  shadowUrl,
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-  popupAnchor: [1, -34],
-  tooltipAnchor: [16, -28],
-  shadowSize: [41, 41]
-});
-L.Marker.prototype.options.icon = iconDefault;
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, BaseChartDirective],
+  imports: [CommonModule, BaseChartDirective, FormsModule],
   templateUrl: './dashboard.component.html',
   styleUrls: ['./dashboard.component.css']
 })
 export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   private subscription: any;
-  private map: L.Map | undefined;
-  private marker: L.Marker | undefined;
 
   // Real-time Metrics
   metrics = {
@@ -46,6 +29,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
 
   gpsStatus: string = 'Initializing...';
   lastUpdated: string = '--';
+
 
   // Common Chart Options
   public commonLineChartOptions: ChartOptions<'line'> = {
@@ -109,7 +93,7 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     maintainAspectRatio: false
   };
 
-  constructor(private supabaseService: SupabaseService) {}
+  constructor(private supabaseService: SupabaseService, private http: HttpClient) {}
 
   async ngOnInit() {
     await this.loadInitialData();
@@ -124,24 +108,15 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   }
 
   ngAfterViewInit() {
-    this.initMap();
+    // Map removed from dashboard
   }
 
   ngOnDestroy() {
     if (this.subscription) {
       this.subscription.unsubscribe();
     }
-    if (this.map) {
-      this.map.remove();
-    }
   }
 
-  private initMap() {
-    this.map = L.map('map-container').setView([0, 0], 2);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(this.map);
-  }
 
   async loadInitialData() {
     try {
@@ -156,7 +131,6 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
 
         // Update cards and map with the most recent reading (index 0)
         this.updateCards(data[0]);
-        this.updateMap(data[0]);
       } else {
         this.gpsStatus = 'No data available';
       }
@@ -169,7 +143,6 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
   handleNewTelemetry(reading: any) {
     this.updateCards(reading);
     this.updateChartData(reading);
-    this.updateMap(reading);
   }
 
   updateCards(reading: any) {
@@ -270,22 +243,4 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     this.ethChartData = { ...this.ethChartData };
   }
 
-  updateMap(reading: any) {
-    if (!this.map) return;
-
-    if (reading.lat && reading.lng && reading.lat !== 0 && reading.lng !== 0) {
-      const latLng: L.LatLngExpression = [reading.lat, reading.lng];
-      
-      if (!this.marker) {
-        this.marker = L.marker(latLng).addTo(this.map);
-      } else {
-        this.marker.setLatLng(latLng);
-      }
-      
-      this.map.setView(latLng, 14);
-      this.gpsStatus = `Live Location: ${reading.lat.toFixed(4)}, ${reading.lng.toFixed(4)}`;
-    } else {
-      this.gpsStatus = 'GPS unavailable';
-    }
-  }
 }

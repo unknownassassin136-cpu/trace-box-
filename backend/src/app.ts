@@ -12,9 +12,11 @@ app.get('/health', (req: Request, res: Response) => {
   res.status(200).json({ status: 'ok', service: 'TraceNode Backend' });
 });
 
+import deviceRoutes from './modules/devices/device.routes';
+
 // Setup API routes (Placeholders for now)
 // app.use('/api/auth', authRoutes);
-// app.use('/api/devices', deviceRoutes);
+app.use('/api/devices', deviceRoutes);
 // app.use('/api/shipments', shipmentRoutes);
 // app.use('/api/telemetry', telemetryRoutes);
 // app.use('/api/events', eventRoutes);
