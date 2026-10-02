@@ -3,11 +3,11 @@
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": "http://YOUR_VPS_IP:3000/api/$1"
+      "destination": "http://178.93.119.37:19204/api/$1"
     },
     {
       "source": "/socket.io/(.*)",
-      "destination": "http://YOUR_VPS_IP:3000/socket.io/$1"
+      "destination": "http://178.93.119.37:19204/socket.io/$1"
     },
     {
       "source": "/(.*)",
