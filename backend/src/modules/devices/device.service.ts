@@ -1,8 +1,30 @@
 import { db } from '../../db';
-import { deviceConfig } from '../../db/schema';
+import { deviceConfig, devices } from '../../db/schema';
 import { eq } from 'drizzle-orm';
 
 export class DeviceService {
+  async registerDevice(userId: string, registrationCode: string) {
+    // Find device by registration code
+    const device = await db.query.devices.findFirst({
+      where: eq(devices.registrationCode, registrationCode)
+    });
+
+    if (!device) {
+      throw new Error('Invalid registration code');
+    }
+
+    if (device.isLinked) {
+      throw new Error('Device is already registered');
+    }
+
+    // Link device to user
+    const updated = await db.update(devices)
+      .set({ isLinked: true, userId: userId, updatedAt: new Date() })
+      .where(eq(devices.deviceId, device.deviceId))
+      .returning();
+
+    return updated[0];
+  }
   async getConfig(deviceId: string) {
     const config = await db.query.deviceConfig.findFirst({
       where: eq(deviceConfig.deviceId, deviceId)

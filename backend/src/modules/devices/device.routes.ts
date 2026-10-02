@@ -24,4 +24,44 @@ router.post('/:deviceId/config', async (req: Request, res: Response) => {
   }
 });
 
+router.get('/', async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user.id;
+    // For now we assume we just fetch from DB or a service method
+    // I will use direct DB query here for simplicity since it's just a GET
+    const userDevices = await require('../../db').db.query.devices.findMany({
+      where: require('drizzle-orm').eq(require('../../db/schema').devices.userId, userId)
+    });
+    res.json(userDevices);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to fetch devices' });
+  }
+});
+
+router.post('/register', async (req: Request, res: Response) => {
+  try {
+    const { registrationCode } = req.body;
+    const userId = (req as any).user.id; // From authMiddleware
+
+    if (!registrationCode) {
+      return res.status(400).json({ error: 'Registration code is required' });
+    }
+
+    const device = await deviceService.registerDevice(userId, registrationCode);
+    
+    // Publish MQTT message to notify the ESP32 that it's linked
+    const mqttService = require('../../mqtt/mqtt.service').mqttService;
+    mqttService.publish(`tracenode/events/${device.deviceId}`, JSON.stringify({
+      type: 'LINKED',
+      userId: userId,
+      timestamp: Date.now()
+    }));
+
+    res.json(device);
+  } catch (error: any) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
 export default router;

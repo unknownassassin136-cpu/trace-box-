@@ -24,6 +24,7 @@
 #include <Adafruit_SSD1306.h>
 #include <SPI.h>
 #include <SD.h>
+#include <Preferences.h>
 
 // --- VERIFIED HARDWARE PIN MAP ---
 // I2C Bus (MPU6050 & OLED)
@@ -59,10 +60,12 @@ const char gprsPass[] = "";
 const char* mqtt_server = "broker.hivemq.com";
 const int   mqtt_port = 1883;
 const char* mqtt_topic = "tracenode/telemetry";
-const char* mqtt_client_id = "TraceNode_ESP32_01";
-const char* device_id = "NODE-DEMO-01";
+const char* device_id = "NODE-ESP32-01"; // Unique Hardware ID
+const char* mqtt_client_id = "TraceNode_ESP32_01_Demo";
+const char* secret_code = "839210";      // Registration PIN
 
 // --- OBJECT INITIALIZATION ---
+Preferences preferences;
 HardwareSerial SerialGSM(2);
 HardwareSerial SerialGPS(1);
 TinyGsm modem(SerialGSM);
@@ -89,6 +92,7 @@ const long oledInterval = 3000; // Rotate screen every 3 seconds
 int oledPage = 0;
 
 // --- STATE VARIABLES ---
+bool isLinked = false;
 bool doorWasOpen = false;
 int currentDoorState = LOW;
 float lastTemp = 0.0;
@@ -154,10 +158,32 @@ void processQueue() {
   }
 }
 
+void mqttCallback(char* topic, byte* payload, unsigned int length) {
+  String message = "";
+  for (int i = 0; i < length; i++) {
+    message += (char)payload[i];
+  }
+  Serial.print("MQTT Received on ");
+  Serial.print(topic);
+  Serial.print(": ");
+  Serial.println(message);
+
+  if (String(topic) == String("tracenode/events/") + device_id) {
+    if (message.indexOf("\"type\":\"LINKED\"") != -1 || message.indexOf("\"type\": \"LINKED\"") != -1) {
+      Serial.println("Device Linked via Backend!");
+      isLinked = true;
+      preferences.putBool("isLinked", true);
+    }
+  }
+}
+
 void setup() {
   Serial.begin(115200);
   delay(10);
   
+  preferences.begin("tracenode", false);
+  isLinked = preferences.getBool("isLinked", false);
+
   Serial.println("\n================================");
   Serial.println("TRACENODE TRACEBOX");
   Serial.println("================================");
@@ -235,6 +261,7 @@ void setup() {
 
   // Setup MQTT
   mqtt.setServer(mqtt_server, mqtt_port);
+  mqtt.setCallback(mqttCallback);
   mqtt.setBufferSize(512);
   
   display.clearDisplay(); display.setCursor(0,0);
@@ -248,6 +275,8 @@ void reconnectMqtt() {
     Serial.print("Connecting to MQTT... ");
     if (mqtt.connect(mqtt_client_id)) {
       Serial.println("MQTT: CONNECTED");
+      String eventTopic = String("tracenode/events/") + device_id;
+      mqtt.subscribe(eventTopic.c_str());
       processQueue(); // Push offline data on reconnect
     } else {
       Serial.print("FAILED, rc=");
@@ -293,6 +322,21 @@ void displayOLED() {
   display.clearDisplay();
   display.setCursor(0,0);
   display.setTextColor(SSD1306_WHITE);
+
+  if (!isLinked) {
+    display.setTextSize(2);
+    display.println("PAIRING");
+    display.setTextSize(1);
+    display.println();
+    display.print("Code: ");
+    display.setTextSize(2);
+    display.println(secret_code);
+    display.setTextSize(1);
+    display.println();
+    display.println("Waiting for Backend...");
+    display.display();
+    return;
+  }
 
   switch(oledPage) {
     case 0:
@@ -384,6 +428,11 @@ void loop() {
   // Publish telemetry (10s)
   if (millis() - lastPublish > publishInterval) {
     lastPublish = millis();
+    
+    if (!isLinked) {
+      Serial.println("Skipping telemetry publish (Not Linked).");
+      return;
+    }
 
     StaticJsonDocument<512> doc;
     doc["deviceId"] = device_id;

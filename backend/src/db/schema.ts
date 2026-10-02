@@ -1,4 +1,4 @@
-import { pgTable, text, timestamp, doublePrecision, integer, json, serial, pgEnum, uniqueIndex, index } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, doublePrecision, integer, json, serial, pgEnum, uniqueIndex, index, boolean } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
 // Enums
@@ -18,7 +18,10 @@ export const users = pgTable('users', {
 // Devices Table
 export const devices = pgTable('devices', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
-  deviceId: text('device_id').notNull().unique(), // Unique hardware ID
+  deviceId: text('device_id').notNull().unique(), // Unique hardware MAC/ID
+  registrationCode: text('registration_code').unique(), // The 6-digit secret code on OLED
+  isLinked: boolean('is_linked').default(false).notNull(),
+  userId: text('user_id').references(() => users.id), // The user who claimed this device
   status: text('status').default('OFFLINE').notNull(),
   battery: doublePrecision('battery'),
   lastSeen: timestamp('last_seen'),
@@ -49,6 +52,7 @@ export const shipments = pgTable('shipments', {
   shipmentId: text('shipment_id').notNull().unique(),
   origin: text('origin').notNull(),
   destination: text('destination').notNull(),
+  routePolyline: text('route_polyline'), // GeoJSON or Polyline string for map
   status: text('status').default('PENDING').notNull(),
   startedAt: timestamp('started_at'),
   endedAt: timestamp('ended_at'),
