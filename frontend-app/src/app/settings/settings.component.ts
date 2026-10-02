@@ -11,6 +11,9 @@ import { HttpClient } from '@angular/common/http';
   styleUrls: ['./settings.component.css']
 })
 export class SettingsComponent implements OnInit {
+  devices: any[] = [];
+  selectedDeviceId: string = '';
+  
   deviceLimits = {
     minTemp: 2.0,
     maxTemp: 8.0,
@@ -27,11 +30,30 @@ export class SettingsComponent implements OnInit {
   constructor(private http: HttpClient) {}
 
   ngOnInit(): void {
+    this.fetchDevices();
+  }
+
+  fetchDevices() {
+    this.http.get<any[]>('/api/devices').subscribe({
+      next: (devices) => {
+        this.devices = devices;
+        if (this.devices.length > 0) {
+          this.selectedDeviceId = this.devices[0].deviceId;
+          this.fetchDeviceLimits();
+        }
+      },
+      error: (err) => console.error('Failed to fetch devices:', err)
+    });
+  }
+
+  onDeviceChange() {
     this.fetchDeviceLimits();
   }
 
   fetchDeviceLimits() {
-    this.http.get<any>('/api/devices/NODE-DEMO-01/config').subscribe({
+    if (!this.selectedDeviceId) return;
+    
+    this.http.get<any>(`/api/devices/${this.selectedDeviceId}/config`).subscribe({
       next: (config) => {
         if (config) {
           this.deviceLimits = {
@@ -51,10 +73,12 @@ export class SettingsComponent implements OnInit {
   }
 
   saveDeviceLimits() {
+    if (!this.selectedDeviceId) return;
+
     this.isSavingLimits = true;
     this.saveStatus = 'Saving...';
     
-    this.http.post<any>('/api/devices/NODE-DEMO-01/config', this.deviceLimits).subscribe({
+    this.http.post<any>(`/api/devices/${this.selectedDeviceId}/config`, this.deviceLimits).subscribe({
       next: (res) => {
         this.isSavingLimits = false;
         this.saveStatus = 'Saved Successfully!';
@@ -67,5 +91,18 @@ export class SettingsComponent implements OnInit {
         console.error('Save error:', err);
       }
     });
+  }
+
+  unlinkDevice() {
+    if (!this.selectedDeviceId) return;
+    
+    if (confirm('Are you sure you want to unlink and delete config for this device?')) {
+      this.http.delete(`/api/devices/${this.selectedDeviceId}`).subscribe({
+        next: () => {
+          this.fetchDevices(); // Refresh list
+        },
+        error: (err) => console.error('Failed to unlink device:', err)
+      });
+    }
   }
 }

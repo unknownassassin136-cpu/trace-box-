@@ -64,4 +64,14 @@ router.post('/register', async (req: Request, res: Response) => {
   }
 });
 
+router.delete('/:deviceId', async (req: Request, res: Response) => {
+  try {
+    await deviceService.deleteDevice(req.params.deviceId);
+    res.json({ success: true });
+  } catch (error: any) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to delete device' });
+  }
+});
+
 export default router;

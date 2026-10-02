@@ -73,4 +73,19 @@ export class DeviceService {
       return inserted[0];
     }
   }
+
+  async deleteDevice(deviceId: string) {
+    // Delete config first (manual cascade)
+    await db.delete(deviceConfig).where(eq(deviceConfig.deviceId, deviceId));
+    
+    // Unlink device (rather than deleting the telemetry/events, we can just unlink it or hard delete it)
+    // If the user wants to truly delete, we can delete the device record. Note: this might fail if there are telemetry rows.
+    // For now, let's just mark it as unlinked and unowned.
+    const updated = await db.update(devices)
+      .set({ isLinked: false, userId: null })
+      .where(eq(devices.deviceId, deviceId))
+      .returning();
+      
+    return updated[0];
+  }
 }

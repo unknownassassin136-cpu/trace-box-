@@ -7,22 +7,34 @@
 
     <!-- Smart Limits Panel -->
     <div class="bg-white rounded-lg shadow border border-gray-100 overflow-hidden">
-      <div class="px-6 py-5 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
+      <div class="px-6 py-5 border-b border-gray-200 bg-gray-50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h3 class="text-lg font-medium text-gray-900">Device Alarm Limits (NODE-DEMO-01)</h3>
+          <h3 class="text-lg font-medium text-gray-900 flex items-center gap-3">
+            Device Alarm Limits
+            <select *ngIf="devices.length > 0" [(ngModel)]="selectedDeviceId" (change)="onDeviceChange()" class="text-sm font-semibold text-slate-800 bg-white border border-gray-300 rounded px-2 py-1">
+              <option *ngFor="let device of devices" [value]="device.deviceId">{{ device.deviceId }}</option>
+            </select>
+          </h3>
           <p class="text-sm text-gray-500 mt-1">Configure threshold limits. Hardware saves data only when these are breached.</p>
         </div>
-        <div class="flex items-center gap-4">
+        <div class="flex items-center gap-4" *ngIf="devices.length > 0">
           <span class="text-sm font-medium" [ngClass]="{'text-green-600': saveStatus === 'Saved Successfully!', 'text-red-600': saveStatus === 'Error saving limits', 'text-gray-500': saveStatus === 'Saving...'}">
             {{ saveStatus }}
           </span>
           <button (click)="saveDeviceLimits()" [disabled]="isSavingLimits" class="bg-slate-900 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-slate-800 transition-colors shadow-sm disabled:opacity-50">
             Save Limits to DB
           </button>
+          <button (click)="unlinkDevice()" class="bg-red-50 text-red-600 border border-red-200 px-3 py-2 rounded-md text-sm font-medium hover:bg-red-100 transition-colors shadow-sm">
+            <i class="fas fa-trash"></i>
+          </button>
         </div>
       </div>
       
-      <div class="p-6">
+      <div class="p-6" *ngIf="devices.length === 0">
+        <p class="text-gray-500 text-center py-8">No devices linked to your account yet.</p>
+      </div>
+      
+      <div class="p-6" *ngIf="devices.length > 0">
         <h4 class="text-md font-medium text-gray-900 mb-4 border-b pb-2">Temperature (°C)</h4>
         <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 mb-8">
           <div>
