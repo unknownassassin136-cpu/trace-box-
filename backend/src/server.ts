@@ -1,6 +1,4 @@
-import 'dotenv/config';
-import WebSocket from 'ws';
-(global as any).WebSocket = WebSocket;
+import './setup';
 
 import { app, httpServer } from './app';
 import { mqttService } from './mqtt/mqtt.service';
