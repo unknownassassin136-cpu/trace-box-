@@ -103,6 +103,24 @@ export class MqttService {
       }
     });
   }
+
+  /**
+   * Publishes a raw message to a specific topic
+   */
+  public publish(topic: string, payloadStr: string) {
+    if (!this.client || !this.client.connected) {
+      console.warn(`[MQTT] Cannot publish to ${topic}, client not connected.`);
+      return;
+    }
+
+    this.client.publish(topic, payloadStr, { qos: 1 }, (err) => {
+      if (err) {
+        console.error(`[MQTT] Failed to publish to ${topic}:`, err);
+      } else {
+        console.log(`[MQTT] Published message to ${topic}`);
+      }
+    });
+  }
 }
 
 // Export singleton instance
