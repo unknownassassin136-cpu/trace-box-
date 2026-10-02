@@ -1,27 +1,17 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "services": {
-    "backend": {
-      "root": "backend",
-      "framework": "express"
-    },
-    "frontend-app": {
-      "root": "frontend-app",
-      "framework": "angular"
-    }
-  },
   "rewrites": [
     {
       "source": "/api/(.*)",
-      "destination": {
-        "service": "backend"
-      }
+      "destination": "http://YOUR_VPS_IP:3000/api/$1"
+    },
+    {
+      "source": "/socket.io/(.*)",
+      "destination": "http://YOUR_VPS_IP:3000/socket.io/$1"
     },
     {
       "source": "/(.*)",
-      "destination": {
-        "service": "frontend-app"
-      }
+      "destination": "/index.html"
     }
   ]
 }
