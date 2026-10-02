@@ -33,8 +33,44 @@ export class EventService {
       });
 
       console.log(`[EventService] Telemetry saved for ${deviceId}`);
+      
+      // Evaluate Thresholds
+      await this.evaluateThresholds(deviceId, data);
+
     } catch (err) {
       console.error('[EventService] Failed to process telemetry:', err);
+    }
+  }
+
+  private async evaluateThresholds(deviceId: string, data: any) {
+    try {
+      const { deviceConfig } = await import('../../db/schema');
+      const configs = await db.select().from(deviceConfig).where(eq(deviceConfig.deviceId, deviceId));
+      
+      // Default thresholds if not configured
+      const config = configs.length > 0 ? configs[0] : {
+        maxTemp: 8.0, minTemp: 2.0, maxHumidity: 65.0, minHumidity: 30.0
+      };
+
+      const now = Math.floor(Date.now() / 1000);
+
+      // Temperature Breach
+      if (data.temperature !== undefined && (data.temperature > config.maxTemp || data.temperature < config.minTemp)) {
+        await this.processEvent(deviceId, {
+          seq: now, type: 'TEMP_BREACH', ts: now, 
+          value: data.temperature, limit: data.temperature > config.maxTemp ? config.maxTemp : config.minTemp
+        });
+      }
+
+      // Humidity Breach
+      if (data.humidity !== undefined && (data.humidity > config.maxHumidity || data.humidity < config.minHumidity)) {
+        await this.processEvent(deviceId, {
+          seq: now + 1, type: 'HUMIDITY_BREACH', ts: now, 
+          value: data.humidity, limit: data.humidity > config.maxHumidity ? config.maxHumidity : config.minHumidity
+        });
+      }
+    } catch (err) {
+      console.error('[EventService] Failed to evaluate thresholds:', err);
     }
   }
 
