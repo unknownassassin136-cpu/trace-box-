@@ -92,15 +92,18 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     maintainAspectRatio: false
   };
 
+  devices: any[] = [];
+  selectedDeviceId: string = '';
+
   constructor(private apiService: ApiService) {}
 
   async ngOnInit() {
-    await this.loadInitialData();
+    await this.fetchDevices();
     
     // Subscribe to live telemetry inserts
     this.subscription = this.apiService.subscribeToTelemetry((payload) => {
       // payload format will be the raw object emitted from socket.io
-      if (payload && payload.device_id === 'NODE-DEMO-01') {
+      if (payload && this.selectedDeviceId && payload.device_id === this.selectedDeviceId) {
         this.handleNewTelemetry(payload);
       }
     });
@@ -116,10 +119,50 @@ export class DashboardComponent implements OnInit, AfterViewInit, OnDestroy {
     }
   }
 
+  async fetchDevices() {
+    try {
+      const devices = await this.apiService.get('/devices').toPromise();
+      this.devices = devices;
+      if (this.devices.length > 0) {
+        this.selectedDeviceId = this.devices[0].deviceId;
+        await this.loadInitialData();
+      } else {
+        this.gpsStatus = 'No linked devices';
+      }
+    } catch (err) {
+      console.error('Failed to fetch devices', err);
+      this.gpsStatus = 'Error loading devices';
+    }
+  }
+
+  onDeviceChange() {
+    this.loadInitialData();
+  }
 
   async loadInitialData() {
+    if (!this.selectedDeviceId) return;
+
+    this.gpsStatus = 'Initializing...';
+    // Clear charts for new device
+    this.tempChartData.labels = [];
+    this.tempChartData.datasets[0].data = [];
+    this.humChartData.labels = [];
+    this.humChartData.datasets[0].data = [];
+    this.ethChartData.labels = [];
+    this.ethChartData.datasets[0].data = [];
+    this.metrics = {
+      temperature: { value: '--', unit: '°C', status: 'Pending' },
+      humidity: { value: '--', unit: '%', status: 'Pending' },
+      ethylene: { value: '--', unit: 'ppm', status: 'Pending' },
+      battery: { value: '--', unit: '%', status: 'Pending' },
+      network: { value: 'OFFLINE', status: 'Inactive' },
+      pendingSync: { value: '0', status: 'Synced' },
+      ledger: { value: 'PENDING', status: 'Checking' }
+    };
+    this.lastUpdated = '--';
+
     try {
-      const data = await this.apiService.getTelemetry('NODE-DEMO-01');
+      const data = await this.apiService.getTelemetry(this.selectedDeviceId);
       if (data && data.length > 0) {
         // Reverse to get chronological order for charts (oldest first)
         const chronologicalData = [...data].reverse();
