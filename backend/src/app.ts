@@ -40,8 +40,8 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
 
 // Setup Socket.io and Supabase Realtime Broadcasting
 const supabase = createClient(
-  process.env.SUPABASE_URL || '',
-  process.env.SUPABASE_KEY || ''
+  process.env.SUPABASE_URL || 'https://takqjthgdwuqavnvyoxb.supabase.co',
+  process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRha3FqdGhnZHd1cWF2bnZ5b3hiIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MDM4NDU0OCwiZXhwIjoyMTA1OTYwNTQ4fQ.6cGWT1N58sgPiCcwMxGSPDemyXTSgp5Z3LKroFtdrpk'
 );
 
 io.on('connection', (socket) => {
