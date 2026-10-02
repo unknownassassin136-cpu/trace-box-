@@ -23,6 +23,27 @@ router.post('/login', async (req: Request, res: Response) => {
     return res.status(401).json({ error: error.message });
   }
 
+  // Sync the Supabase user to our public.users table to satisfy foreign keys
+  if (data.user) {
+    try {
+      const { db } = await import('../../db');
+      const { users } = await import('../../db/schema');
+      
+      await db.insert(users).values({
+        id: data.user.id,
+        email: data.user.email || 'unknown@example.com',
+        name: data.user.user_metadata?.full_name || 'System Admin',
+        password: 'supabase_auth', // Handled by supabase
+        role: 'ADMIN'
+      }).onConflictDoUpdate({
+        target: users.id,
+        set: { updatedAt: new Date() } // Just touch the record
+      });
+    } catch (dbErr) {
+      console.warn('Failed to sync user to public.users table:', dbErr);
+    }
+  }
+
   // Forward the session to the frontend securely
   res.json({ session: data.session });
 });
