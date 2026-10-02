@@ -1,0 +1,9 @@
+{
+  "name": "tracenode-root",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "typescript": "^5.2.2",
+    "ts-node": "^10.9.1"
+  }
+}

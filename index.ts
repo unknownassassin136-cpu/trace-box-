@@ -1,4 +1,5 @@
-const { spawn } = require('child_process');
+import { spawn } from 'child_process';
+import process from 'process';
 
 console.log("Starting TraceNode backend from root wrapper...");
 
@@ -26,6 +27,6 @@ install.on('close', (code) => {
 
   server.on('close', (code) => {
     console.log(`Backend server exited with code ${code}`);
-    process.exit(code);
+    process.exit(code ?? 1);
   });
 });
